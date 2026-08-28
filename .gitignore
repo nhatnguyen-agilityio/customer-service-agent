@@ -1,0 +1,17 @@
+# Environments / secrets
+.env
+.venv/
+# Note: uv.lock is intentionally NOT ignored -- commit it for reproducible installs.
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# LangGraph Platform local dev
+.langgraph_api/
+
+# OS
+.DS_Store
