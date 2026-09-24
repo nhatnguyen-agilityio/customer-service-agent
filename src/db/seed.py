@@ -124,6 +124,19 @@ def _status_for_age(created_at: datetime) -> str:
     return "delivered"
 
 
+# Remaining days until delivery, by status -- anchored to "now" (seed time),
+# not to created_at, since created_at is a simulated PAST date and an ETA
+# has to be forward-looking. None for 'delivered' -- no ETA needed.
+REMAINING_DAYS_BY_STATUS = {"processing": 5, "shipped": 2, "delivered": None}
+
+
+def _estimated_delivery_for_status(status: str) -> str | None:
+    remaining_days = REMAINING_DAYS_BY_STATUS[status]
+    if remaining_days is None:
+        return None
+    return (datetime.now(timezone.utc) + timedelta(days=remaining_days)).isoformat()
+
+
 def seed_orders_and_items(products: list[dict], customers: list[dict]) -> None:
     # bucket: <1 day (processing), 1-7 days (shipped), >7 days (delivered).
     age_buckets_days = [0, 0, 2, 4, 5, 9, 14, 20, 0, 3, 6, 11, 1, 8, 17, 0, 4, 15]
@@ -149,12 +162,14 @@ def seed_orders_and_items(products: list[dict], customers: list[dict]) -> None:
             sum(item["unit_price"] * item["quantity"] for item in line_items), 2
         )
 
+        status = _status_for_age(created_at)
         orders_to_insert.append(
             {
                 "customer_id": customer["id"],
-                "status": _status_for_age(created_at),
+                "status": status,
                 "created_at": created_at.isoformat(),
                 "total": total,
+                "estimated_delivery": _estimated_delivery_for_status(status),
             }
         )
         order_meta.append(line_items)

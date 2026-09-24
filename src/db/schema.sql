@@ -1,11 +1,4 @@
 -- Run this in the Supabase SQL editor (Project -> SQL Editor -> New query).
---
--- Note: this project uses the service_role key (bypasses RLS) for all
--- backend access -- the SQL toolkit, seed script, and RAG tool all connect
--- server-side. Row Level Security policies are intentionally left out here
--- since nothing queries these tables with the anon key; add RLS policies
--- if that ever changes.
-
 -- ---------------------------------------------------------------------------
 -- Retail data: products, customers, orders, order_items
 -- ---------------------------------------------------------------------------
@@ -30,7 +23,8 @@ create table orders (
     customer_id bigint not null references customers(id),
     status text not null default 'processing',
     created_at timestamptz not null default now(),
-    total numeric(10, 2) not null
+    total numeric(10, 2) not null,
+    estimated_delivery timestamptz
 );
 create index orders_customer_id_idx on orders(customer_id);
 
@@ -93,3 +87,15 @@ begin
     order by documents.embedding <=> query_embedding;
 end;
 $$;
+
+
+create role agent_readonly with login password '<set a real password>';
+grant connect on database postgres to agent_readonly;
+grant usage on schema public to agent_readonly;
+grant select on all tables in schema public to agent_readonly;
+alter default privileges in schema public grant select on tables to agent_readonly;
+
+create policy agent_readonly_select on products for select to agent_readonly using (true);
+create policy agent_readonly_select on customers for select to agent_readonly using (true);
+create policy agent_readonly_select on orders for select to agent_readonly using (true);
+create policy agent_readonly_select on order_items for select to agent_readonly using (true);
