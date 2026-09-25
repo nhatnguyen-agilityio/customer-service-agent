@@ -14,8 +14,20 @@ from src.tools.sql_tools import get_sql_tools
 from src.agent.memory import manage_memory
 from src.agent.state import State
 from src.agent.prompts import SYSTEM_PROMPT
+from src.agent.errors import handle_tool_errors
 
-ALL_TOOLS = get_sql_tools() + [
+
+# SQL toolkit connects eagerly at call time; if the DB is unreachable, degrade
+# gracefully (agent still starts, just without DB-backed tools) instead of crashing.
+try:
+    SQL_TOOLS = get_sql_tools()
+except Exception as e:
+    print(
+        f"[startup warning] SQL toolkit failed to initialize -- database queries unavailable: {e}"
+    )
+    SQL_TOOLS = []
+
+ALL_TOOLS = SQL_TOOLS + [
     price_comparison_tool,
     web_search_tool,
     shipping_tracker_tool,
@@ -52,11 +64,12 @@ builder = (
     StateGraph(State)
     .add_node("manage_memory", manage_memory)
     .add_node("agent", call_model)
-    .add_node("tools", ToolNode(ALL_TOOLS))
-    
+    .add_node("tools", ToolNode(ALL_TOOLS, wrap_tool_call=handle_tool_errors))
     .add_edge(START, "manage_memory")
     .add_edge("manage_memory", "agent")
-    .add_conditional_edges("agent", route_after_model, {"tools": "tools", "end": END})
+    .add_conditional_edges(
+        "agent", route_after_model, {"tools": "tools", "end": END}
+    )
     .add_edge("tools", "agent")
 )
 
