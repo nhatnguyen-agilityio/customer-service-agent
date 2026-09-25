@@ -1,12 +1,27 @@
 import os
 import httpx
 from langgraph_sdk import Auth
+from supabase import create_client
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 SUPABASE_ANON_KEY = os.environ["SUPABASE_ANON_KEY"]
 
 auth = Auth()
+
+_db_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+
+def _provision_customer(email: str) -> None:
+    existing = (
+        _db_client.table("customers").select("id").eq("email", email).execute()
+    )
+    if existing.data:
+        return
+    display_name = email.split("@")[0].replace(".", " ").title()
+    _db_client.table("customers").insert(
+        {"email": email, "name": display_name}
+    ).execute()
 
 @auth.authenticate
 async def get_current_user(
@@ -49,7 +64,9 @@ async def sign_up(email: str, password: str):
             headers={"apiKey": SUPABASE_ANON_KEY},
         )
         assert response.status_code == 200
-        return response.json()
+        result = response.json()
+        _provision_customer(email)
+        return result
 
 
 async def login(email: str, password: str):
