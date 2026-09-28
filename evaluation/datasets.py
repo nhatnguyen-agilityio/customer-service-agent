@@ -42,3 +42,38 @@ if not client.has_dataset(dataset_name=accuracy_dataset_name):
     client.create_examples(
         dataset_id=accuracy_dataset.id, examples=accuracy_examples
     )
+
+tool_usage_examples = [
+    {
+        "inputs": {
+            "question": "What's the price of the Air Fryer and how does it compare to competitors?"
+        },
+        "outputs": {"expected_tools": ["price_comparison_tool"]},
+    },
+    {
+        "inputs": {"question": "What's the status of order 7?"},
+        "outputs": {"expected_tools": ["shipping_tracker_tool"]},
+    },
+    {
+        "inputs": {"question": "What is your return policy?"},
+        "outputs": {"expected_tools": ["faq_lookup_tool"]},
+    },
+    {
+        "inputs": {
+            "question": "How many products do you have in Electronics?"
+        },
+        "outputs": {"expected_tools": ["sql_db_query"]},
+    },
+    {
+        "inputs": {"question": "What's the weather in Da Nang?"},
+        "outputs": {"expected_tools": []},
+    },
+]
+
+tool_usage_dataset_name = "Customer Service Agent: Tool Usage Efficiency"
+
+if not client.has_dataset(dataset_name=tool_usage_dataset_name):
+    tool_usage_dataset = client.create_dataset(tool_usage_dataset_name)
+    client.create_examples(
+        dataset_id=tool_usage_dataset.id, examples=tool_usage_examples
+    ) 

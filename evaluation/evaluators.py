@@ -60,3 +60,12 @@ async def final_answer_correct(
         ]
     )
     return grade["is_correct"]
+
+
+# Evaluator function for expected tools
+def used_expected_tools(outputs: dict, reference_outputs: dict) -> bool:
+    expected = reference_outputs["expected_tools"]
+    actual = outputs["tools_called"]
+    if not expected:
+        return actual == []
+    return all(t in actual for t in expected)
