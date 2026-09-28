@@ -1,12 +1,11 @@
-from langchain_core.messages import trim_messages
+from langchain_core.messages import trim_messages, RemoveMessage
 from langchain.chat_models import init_chat_model
 from src.agent.state import State
 
 def manage_memory(state: State) -> dict:
     """
-    This function will manage the memory of the agent.
+    Trim old messages once the conversation passes a token threshold.
     """
-    
     trimmed = trim_messages(
         state["messages"],
         max_tokens=4000,
@@ -15,5 +14,10 @@ def manage_memory(state: State) -> dict:
         start_on="human",
     )
     if len(trimmed) == len(state["messages"]):
-        return {}  # nothing trimmed, no update needed
-    return {"messages": trimmed}
+        return {}  # nothing to trim
+
+    kept_ids = {m.id for m in trimmed}
+    to_remove = [
+        RemoveMessage(id=m.id) for m in state["messages"] if m.id not in kept_ids
+    ]
+    return {"messages": to_remove}

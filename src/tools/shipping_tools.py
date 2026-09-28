@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 from dotenv import load_dotenv
-from langchain.tools import tool
+from langchain.tools import tool, ToolRuntime
 from supabase import create_client
 
 _ = load_dotenv()
@@ -11,7 +11,7 @@ client = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_
 
 
 @tool
-def shipping_tracker_tool(order_id: str) -> str:
+def shipping_tracker_tool(order_id: str, runtime: ToolRuntime) -> str:
     """Check the shipping status and estimated delivery date for an order."""
     try:
         parsed_id = int(order_id)
@@ -23,6 +23,18 @@ def shipping_tracker_tool(order_id: str) -> str:
         return f"No order found with ID {order_id}."
 
     order = result.data[0]
+
+    # Ownership check: only the logged-in customer's own orders are visible,
+    # regardless of what order ID is asked for.
+    user_email = runtime.config.get("configurable", {}).get("user_email")
+    if user_email:
+        customer = (
+            client.table("customers").select("id").eq("email", user_email).execute()
+        )
+        current_customer_id = customer.data[0]["id"] if customer.data else None
+        if current_customer_id is None or order["customer_id"] != current_customer_id:
+            return "I can only provide shipping information for your own orders."
+
     status = order["status"]
 
     if status == "delivered":

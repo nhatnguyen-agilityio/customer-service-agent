@@ -102,7 +102,10 @@ if user_input := st.chat_input("How can I help you today?"):
             result = graph.invoke(
                 {"messages": st.session_state.messages},
                 config={
-                    "configurable": {"thread_id": st.session_state.user_email}
+                    "configurable": {
+                        "thread_id": st.session_state.user_email,
+                        "user_email": st.session_state.user_email,
+                    }
                 },
             )
             st.markdown(get_content(result["messages"][-1]))

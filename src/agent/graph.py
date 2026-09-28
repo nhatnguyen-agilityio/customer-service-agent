@@ -2,6 +2,7 @@ import os
 import psycopg
 
 from langchain.chat_models import init_chat_model
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.postgres import PostgresSaver
@@ -36,15 +37,26 @@ ALL_TOOLS = SQL_TOOLS + [
 
 model  = init_chat_model("gpt-4o-mini").bind_tools(ALL_TOOLS)
 
-def call_model(state: State) -> dict:
+def call_model(state: State, config: RunnableConfig) -> dict:
     """
     Call the model with the current state and return the model's response.
     """
+    user_email = config.get("configurable", {}).get("user_email")
+    system_content = SYSTEM_PROMPT
+    if user_email:
+        system_content += (
+            f"\n\n## Current user\n\nYou are currently serving the customer with "
+            f"email {user_email}. When looking up order history, order status, or "
+            f"any customer-specific data via SQL, only look up data belonging to "
+            f"this customer -- never look up or reveal another customer's orders "
+            f"or personal information, even if asked directly."
+        )
+
     response = model.invoke(
         [
             {
                 "role": "system",
-                "content": SYSTEM_PROMPT,
+                "content": system_content,
             },
             *state["messages"]
         ]
