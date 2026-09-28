@@ -76,4 +76,69 @@ if not client.has_dataset(dataset_name=tool_usage_dataset_name):
     tool_usage_dataset = client.create_dataset(tool_usage_dataset_name)
     client.create_examples(
         dataset_id=tool_usage_dataset.id, examples=tool_usage_examples
-    ) 
+    )
+
+flow_examples = [
+    {
+        "inputs": {
+            "messages": [
+                "What's the price of the Air Fryer 5.8-Quart?",
+                "How does it compare to competitors?",
+            ]
+        },
+        "outputs": {
+            "response": "The Air Fryer 5.8-Quart is $79.99, which is competitively priced compared to similar air fryers from other brands."
+        },
+    },
+    {
+        "inputs": {
+            "messages": [
+                "What's the status of order 7?",
+                "When will it arrive?",
+            ]
+        },
+        "outputs": {
+            "response": "Order 7 has already been delivered, so there's no further delivery estimate needed."
+        },
+    },
+    {
+        "inputs": {
+            "messages": [
+                "What is your return policy?",
+                "What's the weather like today?",
+                "Sorry, back to my question -- how many days do I have to return an item?",
+            ]
+        },
+        "outputs": {
+            "response": "You have 30 days from delivery to return an item for a full refund, as long as it's unused and in its original packaging."
+        },
+    },
+    {
+        "inputs": {
+            "messages": [
+                "How many Wireless Bluetooth Headphones do you have in stock?",
+                "And what's the price?",
+            ]
+        },
+        "outputs": {
+            "response": "There are 42 Wireless Bluetooth Headphones in stock, priced at $89.99."
+        },
+    },
+    {
+        "inputs": {
+            "messages": [
+                "What was the total for order 12?",
+                "Has it been delivered yet?",
+            ]
+        },
+        "outputs": {
+            "response": "Order 12 had a total of $289.94, and yes, it has already been delivered."
+        },
+    },
+]
+
+flow_dataset_name = "Customer Service Agent: Conversation Flow"
+
+if not client.has_dataset(dataset_name=flow_dataset_name):
+    flow_dataset = client.create_dataset(flow_dataset_name)
+    client.create_examples(dataset_id=flow_dataset.id, examples=flow_examples)

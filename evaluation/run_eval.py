@@ -7,8 +7,13 @@ from evaluation.datasets import (
     client,
     accuracy_dataset_name,
     tool_usage_dataset_name,
+    flow_dataset_name,
 )
-from evaluation.evaluators import final_answer_correct, used_expected_tools
+from evaluation.evaluators import (
+    final_answer_correct,
+    used_expected_tools,
+    conversation_coherent,
+)
 
 async def run_graph(input: dict) -> dict:
     """Run the graph for a single question and return the final response.
@@ -38,14 +43,14 @@ accuracy_results = asyncio.run(
     )
 )
 
-accuracy_runs = list(
-    client.list_runs(project_name=accuracy_results.experiment_name, is_root=True)
-)
-accuracy_feedback = list(
-    client.list_feedback(run_ids=[r.id for r in accuracy_runs])
-)
-accuracy_scores = [f.score for f in accuracy_feedback]
-print(f"Response accuracy: {len(accuracy_scores)} scores -> {accuracy_scores}")
+# accuracy_runs = list(
+#     client.list_runs(project_name=accuracy_results.experiment_name, is_root=True)
+# )
+# accuracy_feedback = list(
+#     client.list_feedback(run_ids=[r.id for r in accuracy_runs])
+# )
+# accuracy_scores = [f.score for f in accuracy_feedback]
+# print(f"Response accuracy: {len(accuracy_scores)} scores -> {accuracy_scores}")
 
 # tool usage efficiency
 async def run_graph_with_trajectory(inputs: dict) -> dict:
@@ -79,3 +84,39 @@ tool_usage_results = asyncio.run(
         max_concurrency=4,
     )
 )
+
+# conversation flow
+async def run_conversation(inputs: dict) -> dict:
+    """Replay a multi-turn conversation one turn at a time on the same fresh
+    thread, so each turn relies on the checkpointer's persisted memory
+    """
+    config = {
+        "configurable": {
+            "thread_id": f"eval-flow-{uuid4()}",
+            "user_email": TEST_USER_EMAIL,
+        }
+    }
+    result = None
+    for turn in inputs["messages"]:
+        result = graph.invoke(
+            {"messages": [{"role": "user", "content": turn}]},
+            config=config,
+        )
+    return {"response": result["messages"][-1].content}
+
+run_conversation_results = asyncio.run(
+    client.aevaluate(
+        run_conversation,
+        data=flow_dataset_name,
+        evaluators=[conversation_coherent],
+        experiment_prefix="customer-service-conversation-flow",
+        max_concurrency=4,
+    )
+)
+
+# flow_runs = list(
+#     client.list_runs(project_name=run_conversation_results.experiment_name, is_root=True)
+# )
+# flow_feedback = list(client.list_feedback(run_ids=[r.id for r in flow_runs]))
+# flow_scores = [f.score for f in flow_feedback]
+# print(f"Conversation flow: {len(flow_scores)} scores -> {flow_scores}")
