@@ -35,7 +35,7 @@ ALL_TOOLS = SQL_TOOLS + [
     faq_lookup_tool,
 ]
 
-model  = init_chat_model("gpt-4o-mini").bind_tools(ALL_TOOLS)
+model  = init_chat_model("gpt-4o-mini", temperature=0).bind_tools(ALL_TOOLS)
 
 def call_model(state: State, config: RunnableConfig) -> dict:
     """
