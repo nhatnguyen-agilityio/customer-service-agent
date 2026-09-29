@@ -8,11 +8,13 @@ from evaluation.datasets import (
     accuracy_dataset_name,
     tool_usage_dataset_name,
     flow_dataset_name,
+    error_dataset_name,
 )
 from evaluation.evaluators import (
     final_answer_correct,
     used_expected_tools,
     conversation_coherent,
+    is_graceful_response,
 )
 
 async def run_graph(input: dict) -> dict:
@@ -120,3 +122,14 @@ run_conversation_results = asyncio.run(
 # flow_feedback = list(client.list_feedback(run_ids=[r.id for r in flow_runs]))
 # flow_scores = [f.score for f in flow_feedback]
 # print(f"Conversation flow: {len(flow_scores)} scores -> {flow_scores}")
+
+# error handling evaluation
+error_results = asyncio.run(
+    client.aevaluate(
+        run_graph,
+        data=error_dataset_name,
+        evaluators=[is_graceful_response],
+        experiment_prefix="customer-service-error-handling",
+        max_concurrency=4,
+    )
+)

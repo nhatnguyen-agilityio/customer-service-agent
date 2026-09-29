@@ -142,3 +142,28 @@ flow_dataset_name = "Customer Service Agent: Conversation Flow"
 if not client.has_dataset(dataset_name=flow_dataset_name):
     flow_dataset = client.create_dataset(flow_dataset_name)
     client.create_examples(dataset_id=flow_dataset.id, examples=flow_examples)
+
+error_examples = [
+    {
+        "inputs": {"question": "What is the status of order abc123?"},
+        "outputs": {"should_be_graceful": True},
+    },
+    {
+        "inputs": {"question": "Do you sell a Quantum Levitation Skateboard?"},
+        "outputs": {"should_be_graceful": True},
+    },
+    {
+        "inputs": {"question": "What is the status of order 2?"},
+        "outputs": {"should_be_graceful": True},
+    }, 
+    {
+        "inputs": {"question": "What's the weather in Da Nang?"},
+        "outputs": {"should_be_graceful": True},
+    },
+]
+
+error_dataset_name = "Customer Service Agent: Error Handling"
+
+if not client.has_dataset(dataset_name=error_dataset_name):
+    error_dataset = client.create_dataset(error_dataset_name)
+    client.create_examples(dataset_id=error_dataset.id, examples=error_examples)

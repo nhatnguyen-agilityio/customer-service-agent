@@ -145,3 +145,23 @@ async def conversation_coherent(
         ]
     )
     return grade["is_coherent"]
+
+
+UNGRACEFUL_RED_FLAGS = [
+    "Traceback",
+    "Error:",
+    "Exception",
+    "psycopg2",
+    "sqlalchemy",
+    "Errno",
+    "NoneType",
+    "Unauthorized",
+    "500 Internal Server Error",
+    "stack trace",
+]
+
+
+# Evaluator function for graceful error handling
+def is_graceful_response(outputs: dict) -> bool:
+    response = outputs["response"]
+    return not any(flag in response for flag in UNGRACEFUL_RED_FLAGS)
