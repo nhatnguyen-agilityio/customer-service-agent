@@ -33,6 +33,40 @@ accuracy_examples = [
         "inputs": {"question": "What was the total for order 12?"},
         "outputs": {"response": "Order 12 has a total of $289.94 and has been delivered."},
     },
+    {
+        "inputs": {"question": "What orders have I placed?"},
+        "outputs": {
+            "response": "You have placed 3 orders: order 4 ($119.95, shipped), order 7 ($259.94, delivered), and order 12 ($289.94, delivered)."
+        },
+    },
+    {
+        "inputs": {"question": "Can I cancel order 7?"},
+        "outputs": {
+            "response": "No, order 7 can't be cancelled -- cancellations are only allowed within 1 hour of placing an order, and order 7 was placed weeks ago."
+        },
+    },
+    {
+        "inputs": {
+            "question": "If I want to cancel an order, when am I able to do that?"
+        },
+        "outputs": {
+            "response": "You can cancel or modify an order within 1 hour of placing it, before it moves to processing. After that, you'd need to contact support."
+        },
+    },
+    {
+        "inputs": {
+            "question": "What do you have in the Home & Kitchen category under $50?"
+        },
+        "outputs": {
+            "response": "Home & Kitchen items under $50 include the Stainless Steel Water Bottle ($24.99), Programmable Coffee Maker ($44.99), Cast Iron Skillet 10-inch ($32.99), Bamboo Cutting Board Set ($19.99), and Memory Foam Pillow ($29.99)."
+        },
+    },
+    {
+        "inputs": {"question": "Can you recommend a good coffee maker?"},
+        "outputs": {
+            "response": "The Programmable Coffee Maker is a good choice -- a 12-cup programmable coffee maker with auto shut-off, priced at $44.99, with 22 in stock."
+        },
+    },
 ]
 
 accuracy_dataset_name = "Customer Service Agent: Response Accuracy"
@@ -67,6 +101,30 @@ tool_usage_examples = [
     {
         "inputs": {"question": "What's the weather in Da Nang?"},
         "outputs": {"expected_tools": []},
+    },
+    {
+        "inputs": {"question": "What orders have I placed?"},
+        "outputs": {"expected_tools": ["sql_db_query"]},
+    },
+    {
+        "inputs": {"question": "Can I cancel order 7?"},
+        "outputs": {"expected_tools": ["sql_db_query"]},
+    },
+    {
+        "inputs": {
+            "question": "If I want to cancel an order, when am I able to do that?"
+        },
+        "outputs": {"expected_tools": ["faq_lookup_tool"]},
+    },
+    {
+        "inputs": {
+            "question": "What do you have in the Home & Kitchen category under $50?"
+        },
+        "outputs": {"expected_tools": ["sql_db_query"]},
+    },
+    {
+        "inputs": {"question": "Can you recommend a good coffee maker?"},
+        "outputs": {"expected_tools": ["sql_db_query"]},
     },
 ]
 
@@ -158,6 +216,10 @@ error_examples = [
     }, 
     {
         "inputs": {"question": "What's the weather in Da Nang?"},
+        "outputs": {"should_be_graceful": True},
+    },
+    {
+        "inputs": {"question": "My order arrived damaged, I'm really frustrated."},
         "outputs": {"should_be_graceful": True},
     },
 ]
