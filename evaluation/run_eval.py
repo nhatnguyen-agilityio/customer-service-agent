@@ -35,25 +35,6 @@ async def run_graph(input: dict) -> dict:
     )
     return {"response": result["messages"][-1].content}
 
-accuracy_results = asyncio.run(
-    client.aevaluate(
-        run_graph,
-        data=accuracy_dataset_name,
-        evaluators=[final_answer_correct],
-        experiment_prefix="customer-service-accuracy",
-        max_concurrency=4,
-    )
-)
-
-# accuracy_runs = list(
-#     client.list_runs(project_name=accuracy_results.experiment_name, is_root=True)
-# )
-# accuracy_feedback = list(
-#     client.list_feedback(run_ids=[r.id for r in accuracy_runs])
-# )
-# accuracy_scores = [f.score for f in accuracy_feedback]
-# print(f"Response accuracy: {len(accuracy_scores)} scores -> {accuracy_scores}")
-
 # tool usage efficiency
 async def run_graph_with_trajectory(inputs: dict) -> dict:
     """Run the graph for a single question and return which tools it called."""
@@ -77,17 +58,6 @@ async def run_graph_with_trajectory(inputs: dict) -> dict:
     ]
     return {"tools_called": tools_called}
 
-tool_usage_results = asyncio.run(
-    client.aevaluate(
-        run_graph_with_trajectory,
-        data=tool_usage_dataset_name,
-        evaluators=[used_expected_tools],
-        experiment_prefix="customer-service-efficiency",
-        max_concurrency=4,
-    )
-)
-
-# conversation flow
 async def run_conversation(inputs: dict) -> dict:
     """Replay a multi-turn conversation one turn at a time on the same fresh
     thread, so each turn relies on the checkpointer's persisted memory
@@ -106,30 +76,61 @@ async def run_conversation(inputs: dict) -> dict:
         )
     return {"response": result["messages"][-1].content}
 
-run_conversation_results = asyncio.run(
-    client.aevaluate(
-        run_conversation,
-        data=flow_dataset_name,
-        evaluators=[conversation_coherent],
-        experiment_prefix="customer-service-conversation-flow",
-        max_concurrency=4,
-    )
-)
 
-# flow_runs = list(
-#     client.list_runs(project_name=run_conversation_results.experiment_name, is_root=True)
-# )
-# flow_feedback = list(client.list_feedback(run_ids=[r.id for r in flow_runs]))
-# flow_scores = [f.score for f in flow_feedback]
-# print(f"Conversation flow: {len(flow_scores)} scores -> {flow_scores}")
-
-# error handling evaluation
-error_results = asyncio.run(
-    client.aevaluate(
-        run_graph,
-        data=error_dataset_name,
-        evaluators=[is_graceful_response],
-        experiment_prefix="customer-service-error-handling",
-        max_concurrency=4,
+if __name__ == "__main__":
+    accuracy_results = asyncio.run(
+        client.aevaluate(
+            run_graph,
+            data=accuracy_dataset_name,
+            evaluators=[final_answer_correct],
+            experiment_prefix="customer-service-accuracy",
+            max_concurrency=4,
+        )
     )
-)
+
+    tool_usage_results = asyncio.run(
+        client.aevaluate(
+            run_graph_with_trajectory,
+            data=tool_usage_dataset_name,
+            evaluators=[used_expected_tools],
+            experiment_prefix="customer-service-efficiency",
+            max_concurrency=4,
+        )
+    )
+
+    run_conversation_results = asyncio.run(
+        client.aevaluate(
+            run_conversation,
+            data=flow_dataset_name,
+            evaluators=[conversation_coherent],
+            experiment_prefix="customer-service-conversation-flow",
+            max_concurrency=4,
+        )
+    )
+
+    # error handling evaluation
+    error_results = asyncio.run(
+        client.aevaluate(
+            run_graph,
+            data=error_dataset_name,
+            evaluators=[is_graceful_response],
+            experiment_prefix="customer-service-error-handling",
+            max_concurrency=4,
+        )
+    )
+
+    experiments = [
+        ("Response accuracy", accuracy_results),
+        ("Tool usage efficiency", tool_usage_results),
+        ("Conversation flow", run_conversation_results),
+        ("Error handling", error_results),
+    ]
+
+    for name, results in experiments:
+        runs = list(
+            client.list_runs(project_name=results.experiment_name, is_root=True)
+        )
+        feedback = list(client.list_feedback(run_ids=[r.id for r in runs]))
+        scores = [f.score for f in feedback]
+        pass_rate = sum(scores) / len(scores) if scores else 0.0
+        print(f"{name}: {len(scores)} scores -> {scores} (pass rate: {pass_rate:.0%})")
