@@ -1,6 +1,9 @@
 from typing_extensions import Annotated, TypedDict
 
 from langchain.chat_models import init_chat_model
+from openai import APIConnectionError, InternalServerError, RateLimitError
+
+RETRYABLE_ERRORS = (RateLimitError, InternalServerError, APIConnectionError)
 
 # LLM-as-judge instructions
 grader_instructions = """You are a teacher grading a quiz.
@@ -36,9 +39,11 @@ class Grade(TypedDict):
 
 
 # Judge LLM
-grader_llm = init_chat_model(
-    "gpt-5.4-mini", temperature=0
-).with_structured_output(Grade, method="json_schema", strict=True)
+grader_llm = (
+    init_chat_model("gpt-5.4-mini", temperature=0)
+    .with_structured_output(Grade, method="json_schema", strict=True)
+    .with_retry(retry_if_exception_type=RETRYABLE_ERRORS)
+)
 
 
 # Evaluator function
@@ -118,9 +123,11 @@ class CoherenceGrade(TypedDict):
 
 
 # Judge LLM for conversation coherence
-coherence_llm = init_chat_model(
-    "gpt-5.4-mini", temperature=0
-).with_structured_output(CoherenceGrade, method="json_schema", strict=True)
+coherence_llm = (
+    init_chat_model("gpt-5.4-mini", temperature=0)
+    .with_structured_output(CoherenceGrade, method="json_schema", strict=True)
+    .with_retry(retry_if_exception_type=RETRYABLE_ERRORS)
+)
 
 
 # Evaluator function for conversation coherence

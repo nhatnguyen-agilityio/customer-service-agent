@@ -7,6 +7,8 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.postgres import PostgresSaver
 
+from openai import APIConnectionError, InternalServerError, RateLimitError
+
 from src.tools.price_tools import price_comparison_tool
 from src.tools.shipping_tools import shipping_tracker_tool
 from src.tools.search_tools import web_search_tool
@@ -35,7 +37,11 @@ ALL_TOOLS = SQL_TOOLS + [
     faq_lookup_tool,
 ]
 
-model  = init_chat_model("gpt-4o-mini", temperature=0).bind_tools(ALL_TOOLS)
+model = (
+    init_chat_model("gpt-4o-mini", temperature=0)
+    .bind_tools(ALL_TOOLS)
+    .with_retry(retry_if_exception_type=(RateLimitError, InternalServerError, APIConnectionError))
+)
 
 def call_model(state: State, config: RunnableConfig) -> dict:
     """
