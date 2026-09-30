@@ -91,7 +91,7 @@ builder = (
     .add_edge("tools", "agent")
 )
 
-# Compile the graph with a checkpointer (in-memory for now)
+# Compile the graph with a checkpointer
 conn = psycopg.connect(os.environ["SUPABASE_DB_URL"], autocommit=True)
 checkpointer = PostgresSaver(conn=conn)
 checkpointer.setup()
