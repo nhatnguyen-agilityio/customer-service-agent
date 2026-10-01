@@ -52,7 +52,10 @@ def get_role(message) -> str:
     return {"human": "user", "ai": "assistant"}.get(message.type, message.type)
 
 def get_content(message) -> str:
-    return message["content"] if isinstance(message, dict) else message.content
+    content = message["content"] if isinstance(message, dict) else message.content
+    # Escape literal "$" so Streamlit's markdown renderer doesn't interpret
+    # price mentions (e.g. "$5.99 ... $50") as a LaTeX math expression.
+    return content.replace("$", "\\$")
 
 def is_visible_message(message) -> bool:
     """Only show real user turns and final assistant replies."""
