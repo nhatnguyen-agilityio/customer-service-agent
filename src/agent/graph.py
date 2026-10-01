@@ -1,11 +1,11 @@
 import os
-import psycopg
 
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.postgres import PostgresSaver
+from psycopg_pool import ConnectionPool
 
 from openai import APIConnectionError, InternalServerError, RateLimitError
 
@@ -91,9 +91,14 @@ builder = (
     .add_edge("tools", "agent")
 )
 
-# Compile the graph with a checkpointer
-conn = psycopg.connect(os.environ["SUPABASE_DB_URL"], autocommit=True)
-checkpointer = PostgresSaver(conn=conn)
+pool = ConnectionPool(
+    conninfo=os.environ["SUPABASE_DB_URL"],
+    min_size=1,
+    max_size=5,
+    kwargs={"autocommit": True},
+    check=ConnectionPool.check_connection,
+)
+checkpointer = PostgresSaver(conn=pool)
 checkpointer.setup()
 
 graph = builder.compile(checkpointer=checkpointer)
