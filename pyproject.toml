@@ -17,6 +17,7 @@ dependencies = [
     "streamlit>=1.38.0",
     "supabase",
     "sqlalchemy",
+    "psycopg[binary,pool]",
     "psycopg2-binary",
     "httpx",
 ]
