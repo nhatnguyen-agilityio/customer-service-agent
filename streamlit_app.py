@@ -102,18 +102,29 @@ if user_input := st.chat_input("How can I help you today?"):
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            result = graph.invoke(
-                {"messages": st.session_state.messages},
-                config={
-                    "configurable": {
-                        "thread_id": st.session_state.user_email,
-                        "user_email": st.session_state.user_email,
-                    }
-                },
-            )
-            st.markdown(get_content(result["messages"][-1]))
+            try:
+                result = graph.invoke(
+                    {"messages": st.session_state.messages},
+                    config={
+                        "configurable": {
+                            "thread_id": st.session_state.user_email,
+                            "user_email": st.session_state.user_email,
+                        }
+                    },
+                )
+            except Exception as e:
+                print(f"[streamlit_app] graph.invoke failed: {e}")
+                st.error(
+                    "Something went wrong on our end and I couldn't process that. "
+                    "Please try again in a moment."
+                )
+                result = None
 
-    st.session_state.messages = result["messages"]
+            if result is not None:
+                st.markdown(get_content(result["messages"][-1]))
+
+    if result is not None:
+        st.session_state.messages = result["messages"]
 
 with st.sidebar:
     st.markdown("### 🤖 Customer Service Agent")
