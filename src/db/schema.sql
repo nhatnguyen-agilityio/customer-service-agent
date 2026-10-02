@@ -99,3 +99,14 @@ create policy agent_readonly_select on products for select to agent_readonly usi
 create policy agent_readonly_select on customers for select to agent_readonly using (true);
 create policy agent_readonly_select on orders for select to agent_readonly using (true);
 create policy agent_readonly_select on order_items for select to agent_readonly using (true);
+
+-- ---------------------------------------------------------------------------
+-- Rate limiting -- one row per customer, tracking a rolling message-count
+-- window. See src/security/rate_limit.py.
+-- ---------------------------------------------------------------------------
+
+create table rate_limits (
+    customer_email text primary key,
+    window_start timestamptz not null,
+    message_count integer not null default 0
+);

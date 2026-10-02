@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 _ = load_dotenv()
 
 from src.security.auth import login, sign_up
+from src.security.rate_limit import check_and_increment
 from src.agent.graph import graph
 
 st.set_page_config(page_title="Customer Service Agent", page_icon="🤖")
@@ -101,27 +102,34 @@ if user_input := st.chat_input("How can I help you today?"):
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                result = graph.invoke(
-                    {"messages": st.session_state.messages},
-                    config={
-                        "configurable": {
-                            "thread_id": st.session_state.user_email,
-                            "user_email": st.session_state.user_email,
-                        }
-                    },
-                )
-            except Exception as e:
-                print(f"[streamlit_app] graph.invoke failed: {e}")
-                st.error(
-                    "Something went wrong on our end and I couldn't process that. "
-                    "Please try again in a moment."
-                )
-                result = None
+        if not check_and_increment(st.session_state.user_email):
+            st.warning(
+                "You've sent a lot of messages recently -- please wait a bit "
+                "before sending more."
+            )
+            result = None
+        else:
+            with st.spinner("Thinking..."):
+                try:
+                    result = graph.invoke(
+                        {"messages": st.session_state.messages},
+                        config={
+                            "configurable": {
+                                "thread_id": st.session_state.user_email,
+                                "user_email": st.session_state.user_email,
+                            }
+                        },
+                    )
+                except Exception as e:
+                    print(f"[streamlit_app] graph.invoke failed: {e}")
+                    st.error(
+                        "Something went wrong on our end and I couldn't process that. "
+                        "Please try again in a moment."
+                    )
+                    result = None
 
-            if result is not None:
-                st.markdown(get_content(result["messages"][-1]))
+                if result is not None:
+                    st.markdown(get_content(result["messages"][-1]))
 
     if result is not None:
         st.session_state.messages = result["messages"]
